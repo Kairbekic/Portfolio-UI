@@ -1,0 +1,66 @@
+stages:
+  - test
+  - deploy
+
+variables:
+  DOCKER_DRIVER: overlay2
+
+ui-tests:
+  stage: test
+  image: docker:24
+  services:
+    - docker:24-dind
+
+  before_script:
+    - apk add --no-cache docker-compose
+
+  script:
+    - docker-compose up --exit-code-from regression || true
+
+  variables:
+    LOGIN: $LOGIN
+    PASSWORD: $PASSWORD
+
+  artifacts:
+    when: always
+    paths:
+      - allure-results/
+    expire_in: 1 week
+
+allure-report:
+  stage: deploy
+  image: openjdk:17-slim
+
+  dependencies:
+    - ui-tests
+
+  before_script:
+    - apt-get update
+    - apt-get install -y wget unzip
+    - wget https://github.com/allure-framework/allure2/releases/download/2.34.1/allure-2.34.1.zip
+    - unzip allure-2.34.1.zip
+    - mv allure-2.34.1 /opt/allure
+    - ln -s /opt/allure/bin/allure /usr/bin/allure
+
+  script:
+    - mkdir -p public
+    - allure generate allure-results --clean -o public
+
+  artifacts:
+    paths:
+      - public
+
+pages:
+  stage: deploy
+  dependencies:
+    - allure-report
+
+  script:
+    - echo "Deploy GitLab Pages"
+
+  artifacts:
+    paths:
+      - public
+
+  only:
+    - main
