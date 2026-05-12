@@ -29,7 +29,7 @@ ui-tests:
 
 allure-report:
   stage: deploy
-  image: openjdk:17-slim
+  image: eclipse-temurin:17-jdk
 
   dependencies:
     - ui-tests
