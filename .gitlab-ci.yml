@@ -17,6 +17,7 @@ ui-tests:
     PASSWORD: $PASSWORD
 
   script:
+    - docker-compose build
     - docker-compose up --exit-code-from regression || true
 
   artifacts:
@@ -39,14 +40,9 @@ allure-report:
     - ui-tests
 
   script:
-    # history folder
-    - mkdir -p allure-results/history
-
-    # generate report exactly like GitHub Actions
+    - docker-compose build
+    - docker-compose run regression /bin/sh -c "which allure"
     - docker-compose run regression /bin/sh -c "allure generate allure-results --clean -o public"
-
-    # debug
-    - ls -la
     - ls -la public
 
   artifacts:
