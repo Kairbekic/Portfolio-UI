@@ -4,6 +4,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 class BasePage:
+    SPINNER = ("css selector", ".oxd-form-loader, .oxd-loading-spinner")
 
     def __init__(self, driver):
         self.driver = driver
@@ -18,9 +19,14 @@ class BasePage:
             self.wait.until(EC.url_to_be(self.PAGE_URL))
 
     def make_screenshot(self, screenshot_name):
+        self.wait_for_loader_to_disappear()
         allure.attach(
             body=self.driver.get_screenshot_as_png(),
             name=screenshot_name,
             attachment_type=AttachmentType.PNG
             )
+
+    def wait_for_loader_to_disappear(self):
+        """Универсальный метод ожидания исчезновения загрузчика"""
+        self.wait.until(EC.invisibility_of_element_located(self.SPINNER))
 

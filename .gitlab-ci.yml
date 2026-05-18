@@ -1,69 +1,61 @@
 stages:
   - test
-  - report
   - deploy
+
+variables:
+  # Системные переменные для работы Docker внутри GitLab Runner
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: ""
 
 ui-tests:
   stage: test
-  image: docker:24
+  image: docker:24.0.7 # Используем образ с поддержкой Docker и Docker Compose
   services:
-    - docker:24-dind
-
-  before_script:
-    - apk add --no-cache docker-compose git
-
+    - docker:24.0.7-dind # Запускаем Docker-in-Docker сервис
   variables:
+    # Переменные берутся из Settings -> CI/CD -> Variables в GitLab
     LOGIN: $LOGIN
     PASSWORD: $PASSWORD
+  before_script:
+    # Клонируем ветку с прошлыми отчетами (аналог checkout gh-pages)
+    # GitLab автоматически создает переменную CI_REPOSITORY_URL, используем токен для доступа
+    - apk add --no-cache git
+    - git clone --branch gl-pages https://oauth2:${CI_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git gl-pages || mkdir gl-pages
 
+    # Подготавливаем папку истории для Allure
+    - mkdir -p allure-results/history
+    - cp -R gl-pages/history/* allure-results/history/ || true
   script:
-    - docker-compose build
+    # Запуск тестов через docker-compose
+    # Использование "|| true" гарантирует, что пайплайн не упадет, если упадут автотесты
     - docker-compose up --exit-code-from regression || true
 
+    # Генерируем Allure отчет внутри контейнера
+    - docker-compose run regression /bin/sh -c "allure generate allure-results --clean -o allure-report"
+
+    # Обновляем историю для следующих запусков
+    - mkdir -p gl-pages/history
+    - cp -R allure-report/history/* gl-pages/history/
   artifacts:
-    when: always
+    # Сохраняем сгенерированный отчет и обновленную историю как артефакты
     paths:
-      - allure-results/
-    expire_in: 1 week
+      - allure-report/
+      - gl-pages/
+    expire_in: 1 day
+  # Запуск только вручную, аналогично workflow_dispatch
+  when: manual
 
-
-allure-report:
-  stage: report
-  image: docker:24
-  services:
-    - docker:24-dind
-
-  before_script:
-    - apk add --no-cache docker-compose git
-
-  dependencies:
-    - ui-tests
-
-  script:
-    - docker-compose build
-    - docker-compose run regression /bin/sh -c "which allure"
-    - docker-compose run regression /bin/sh -c "allure generate allure-results --clean -o public"
-    - ls -la public
-
-  artifacts:
-    paths:
-      - public
-    expire_in: 1 week
-
-
+# Специальный джоб GitLab для публикации статических сайтов (аналог GitHub Pages)
 pages:
   stage: deploy
-
-  dependencies:
-    - allure-report
-
+  image: alpine:latest
   script:
-    - echo "Deploy GitLab Pages"
-    - ls -la public
-
+    # GitLab Pages жестко требует, чтобы файлы для публикации лежали в папке "public"
+    - mkdir -p public
+    - cp -R allure-report/* public/
   artifacts:
     paths:
       - public
-
   rules:
-    - if: $CI_COMMIT_BRANCH == "main"
+    # Запускается только после успешного завершения ui-tests
+    - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
