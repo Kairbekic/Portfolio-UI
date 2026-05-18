@@ -13,7 +13,7 @@ class PersonalPage(BasePage):
 
     FIRST_NAME_FIELD = ("xpath", "//input[@name='firstName']")
     SAVE_BUTTON = ("xpath", "(//button[@type='submit'])[1]")
-    SPINNER = ("xpath", "//div[@class='oxd-loading-spinner']")
+    #SPINNER_LOADER = ("xpath", "//div[@class='oxd-loading-spinner']")
 
     def change_name(self, new_name):
         with allure.step(f"Change name on '{new_name}'"):
@@ -25,10 +25,12 @@ class PersonalPage(BasePage):
 
     @allure.step("Save changes")
     def save_changes(self):
+        self.wait_for_loader_to_disappear()
         self.wait.until(EC.element_to_be_clickable(self.SAVE_BUTTON)).click()
 
     @allure.step("Changes has been saved successfuly")
     def is_changes_saved(self):
-        self.wait.until(EC.invisibility_of_element_located(self.SPINNER))
+        #self.wait.until(EC.invisibility_of_element_located(self.SPINNER_LOADER))
+        self.wait_for_loader_to_disappear()
         self.wait.until(EC.visibility_of_element_located(self.FIRST_NAME_FIELD))
         self.wait.until(EC.text_to_be_present_in_element_value(self.FIRST_NAME_FIELD, self.name))
