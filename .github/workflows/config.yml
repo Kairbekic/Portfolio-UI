@@ -18,6 +18,11 @@ jobs:
 
       - name: Generate Allure report
         run: |
+          mkdir -p allure-report
+          
+          chmod -R 777 allure-report
+          chmod -R 777 allure-results
+          
           docker run --rm -v ${{ github.workspace }}:/app -w /app frankescobar/allure-docker-service allure generate allure-results --clean -o allure-report
 
       - name: Deploy to GitHub Pages
