@@ -1,7 +1,19 @@
-.pytest_cache
+# Python cache
 __pycache__/
-.idea
-*.iml
+*.pyc
+*.pyo
+
+# Pytest
+.pytest_cache/
+
+# IDE
+.idea/
+.vscode/
+
+# Environments
 .env
-report
-allure-results
+.venv/
+
+# Reports
+allure-results/
+allure-report/
