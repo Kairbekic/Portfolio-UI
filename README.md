@@ -135,16 +135,22 @@ Open report:
 ```
 
 
-
-
-
 ## CI/CD
 
 The project uses GitHub Actions for:
 - automated test execution
 - Docker-based test running
 - Allure report generation
-- 
+
+
+## Configuration for Forking (GitHub Actions)
+
+If you fork this repository, you need to set up the following repository secrets for the CI/CD pipeline to work correctly:
+1. Go to **Settings** -> **Secrets and variables** -> **Actions**.
+2. Add the following secrets:
+   - `LOGIN` : valid username for the test environment
+   - `PASSWORD` : valid password for the test environment
+
 
 ## Author
 
